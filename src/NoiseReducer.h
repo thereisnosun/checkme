@@ -19,8 +19,13 @@ struct PixelNeightbours
         m_bLeft(false), m_bRight(false), m_bDown(false), m_bUp(false),
         m_bLeftUp(false), m_bLeftDown(false), m_bRightUp(false), m_bRightDown(false)
     {
-        //NOTE: actually if algo works as it should, only three pixels are needed to store:
-        //m_bRight, m_bDown, m_bRightDown
+
+    }
+
+    bool IsFinished() const
+    {
+        return m_bLeft && m_bRight && m_bDown && m_bUp &&
+            m_bLeftUp && m_bLeftDown && m_bRightUp && m_bRightDown;
     }
 
     bool m_bLeft;
@@ -32,11 +37,7 @@ struct PixelNeightbours
     bool m_bRightUp;
     bool m_bRightDown;
 
-    bool IsFinished() const
-    {
-        return m_bLeft && m_bRight && m_bDown && m_bUp &&
-            m_bLeftUp && m_bLeftDown && m_bRightUp && m_bRightDown;
-    }
+    std::vector<int> m_vNoiseNeightbour;
 };
 
 struct ImageSize

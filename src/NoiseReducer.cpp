@@ -38,14 +38,31 @@ void NoiseReducer::RemoveNoisePixels(const std::vector<int> &vPixels, uchar* img
 bool NoiseReducer::CheckPixelNeightbour(std::vector<int> &noisePixels, std::queue<int> &checkQueue,
                                         uchar *internalPtr, int iCurIndex, int iNewIndex)
 {
-    //TODO: handle case, when down left and its considered as last pixel from current line, maybe handle this cases by hand in calling function?
-    bool bTrueNeighbour = false;
     const static int iSize = m_sImageSize.iCols*m_sImageSize.iRows;
     if (iNewIndex >= iSize || iNewIndex < 0)
         return true;
 
+    //checking the very left pixels
+    if (iNewIndex - iCurIndex == m_sImageSize.iCols - 1 && iCurIndex % m_sImageSize.iCols == 0) //left down
+        return true;
 
+    if (iCurIndex - iNewIndex == 1 && iCurIndex % m_sImageSize.iCols == 0) // left 
+        return true;
 
+    if (iCurIndex - iNewIndex == m_sImageSize.iCols - 1 && iCurIndex % m_sImageSize.iCols == 0) //left up
+        return true;
+
+    //checking the very right pixels
+    if (iNewIndex - iCurIndex == 1 && iNewIndex % m_sImageSize.iCols == 0) //right
+        return true;
+
+    if (iNewIndex - iCurIndex == m_sImageSize.iCols + 1 && iNewIndex % m_sImageSize.iCols == 0) //right down
+        return true;
+
+    if (iCurIndex - iNewIndex == m_sImageSize.iCols + 1 && iNewIndex % m_sImageSize.iCols == 0) //right up
+        return true;
+
+    bool bTrueNeighbour = false;
     if (std::end(m_exploredNodes) == std::find(m_exploredNodes.begin(), m_exploredNodes.end(), iNewIndex))
     {
         m_exploredNodes.push_back(iNewIndex);
@@ -67,16 +84,19 @@ bool NoiseReducer::CheckPixelNeightbour(std::vector<int> &noisePixels, std::queu
     return bTrueNeighbour;
 }
 
-
 //TODO: implement update if affected pixel is explored, then invoke specific pixel from noise
 PixelNeightbours NoiseReducer::DefinePixelNeighbours(std::vector<int> &noisePixels, std::queue<int> &checkQueue, uchar *internalPtr, int iCurrentPixel)
 {
     PixelNeightbours currentNeibours;
-    const int iRowLength = m_sImageSize.iCols;
+    static const int iRowLength = m_sImageSize.iCols;
     int iRightIndex = iCurrentPixel + 1;
     if (CheckPixelNeightbour(noisePixels, checkQueue, internalPtr, iCurrentPixel, iRightIndex))
     {
         currentNeibours.m_bRight = true;
+    }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iRightIndex);
     }
 
     int iDownIndex = iCurrentPixel + iRowLength;
@@ -84,11 +104,19 @@ PixelNeightbours NoiseReducer::DefinePixelNeighbours(std::vector<int> &noisePixe
     {
         currentNeibours.m_bDown = true;
     }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iDownIndex); 
+    }
 
     int iRightDownIndex = iCurrentPixel + iRowLength + 1;
     if (CheckPixelNeightbour(noisePixels, checkQueue, internalPtr, iCurrentPixel, iRightDownIndex))
     {
         currentNeibours.m_bRightDown = true;
+    }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iRightDownIndex);
     }
 
     int iLeftDownIndex = iCurrentPixel + iRowLength - 1;
@@ -96,11 +124,19 @@ PixelNeightbours NoiseReducer::DefinePixelNeighbours(std::vector<int> &noisePixe
     {
         currentNeibours.m_bLeftDown = true;
     }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iLeftDownIndex);
+    }
 
     int iLeftIndex = iCurrentPixel - 1;
     if (CheckPixelNeightbour(noisePixels, checkQueue, internalPtr, iCurrentPixel, iLeftIndex))
     {
         currentNeibours.m_bLeft = true;
+    }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iLeftIndex);
     }
 
     int iLeftUpIndex = iCurrentPixel - iRowLength - 1;
@@ -108,17 +144,31 @@ PixelNeightbours NoiseReducer::DefinePixelNeighbours(std::vector<int> &noisePixe
     {
         currentNeibours.m_bLeftUp = true;
     }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iLeftUpIndex);
+    }
+
 
     int iUpIndex = iCurrentPixel - iRowLength;
     if (CheckPixelNeightbour(noisePixels, checkQueue, internalPtr, iCurrentPixel, iUpIndex))
     {
         currentNeibours.m_bUp = true;
     }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iUpIndex);
+    }
+
 
     int iRightUpIndex = iCurrentPixel - iRowLength + 1;
     if (CheckPixelNeightbour(noisePixels, checkQueue, internalPtr, iCurrentPixel, iRightUpIndex))
     {
         currentNeibours.m_bRightUp = true;
+    }
+    else
+    {
+        currentNeibours.m_vNoiseNeightbour.push_back(iRightUpIndex);
     }
 
     return std::move(currentNeibours);
@@ -136,42 +186,40 @@ void NoiseReducer::RemoveNoise(Mat &srcImage, int iMinPixels)
         int iSize = m_sImageSize.iCols*m_sImageSize.iRows;
         uchar *internalPtr = srcImage.ptr(0);
 
+        std::vector<int> noisePixels;
+        noisePixels.reserve(iMinPixels);
         m_exploredNodes.reserve(iSize); //chage to set or maybe even unordered_set to increase performance
-        std::vector<int> noisePixels(iMinPixels, false);
         std::unordered_map<int, PixelNeightbours> neigbourTable;
         std::queue<int> checkQueue;
 
         int iIndex = 0;
         checkQueue.push(iIndex);
         m_exploredNodes.push_back(iIndex);
-        int iPixelsCounter = 0;
-        int iColPos = 0;
-        int iRowPos = 0;
 
-        //TODO: outer while loop, till iColPos < iSize;
+        //TODO: outer while loop, till iIndex < iSize, increment iIndex after each inner loop
+        // check if incremented is in the explored nodes immediatly
         while (!checkQueue.empty())
-        {//NOTE: seems like this algo will go only through one graph
+        {
             int iCurIndex = checkQueue.front();
             checkQueue.pop();
 
-            DefinePixelNeighbours(noisePixels, checkQueue, internalPtr, iCurIndex);
+            PixelNeightbours currNeightbour = DefinePixelNeighbours(noisePixels, checkQueue, internalPtr, iCurIndex);
+            neigbourTable.insert(std::make_pair(iCurIndex, currNeightbour));
+            //TODO: update other pixel neightbours
             if (CheckIfGraphEnded(neigbourTable))
             {
                 if (noisePixels.size() <= iMinPixels)
                 {
                     RemoveNoisePixels(noisePixels, internalPtr);
                     noisePixels.clear();
-
                 }
             }
 
             if (noisePixels.size() > iMinPixels)
             {
                 noisePixels.clear();
-                //clear other neightbour pixels object
+                neigbourTable.clear();
             }
-
-            //NOTE: on each iteration should pixels neighbour table should be checked
         }
 
 
@@ -180,6 +228,4 @@ void NoiseReducer::RemoveNoise(Mat &srcImage, int iMinPixels)
     {
         //TODO: handle other case - create new matrix with Mat::create
     }
-
-    //srcImage.
 }
