@@ -10,7 +10,6 @@ using namespace cv;
 
 const int THRESHOLD = 128;
 
-
 void FindLines(const Mat &adaptiveImage)
 {
     std::vector<Vec4i> vLines;
@@ -54,24 +53,27 @@ int main(int argc, char *argv[])
         SaveImage(imgGray, sBWImage);
 
         Mat normalizedImage;
-        
         int iDepth = imgGray.depth();
-        normalize(imgGray, normalizedImage, 0, 255, NORM_MINMAX, iDepth);
+        normalize(imgGray, normalizedImage, 255, 0, NORM_INF);
         std::string sNormImage = AddSuffix(sImagePath, "norm");
-        SaveImage(imgGray, sNormImage);
+        SaveImage(normalizedImage, sNormImage);
+
+        std::cout << "collumns - " << normalizedImage.cols << " rows - " << normalizedImage.rows << "\n";
+
+        Mat binaryImage;
+        threshold(normalizedImage, binaryImage, 128, 255, CV_THRESH_BINARY); //this one really nessecary for clear picture
+        std::string sBinaryImage = AddSuffix(sImagePath, "binary");
+        SaveImage(binaryImage, sBinaryImage);
 
         Mat adaptiveImage;
-        std::cout << "collumns - " << normalizedImage.cols << " rows - " << normalizedImage.rows << "\n";
-        adaptiveThreshold(normalizedImage, adaptiveImage, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 11, 1);
-      
+        adaptiveThreshold(binaryImage, adaptiveImage, 255, ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 11, 1);
         std::string sAdaptImage = AddSuffix(sImagePath, "adaptive");
-        SaveImage(adaptiveImage, sImagePath);;
-
-        NoiseReducer reducer;
-        reducer.RemoveNoise(adaptiveImage, MINIMAL_PIECE_SIZE);
-        //FindLines(adaptiveImage);
-        std::string sClearImage = AddSuffix(sImagePath, "clear");
-        SaveImage(adaptiveImage, sClearImage);
+        SaveImage(adaptiveImage, sAdaptImage);
+        //NoiseReducer reducer;
+        //reducer.RemoveNoise(adaptiveImage, MINIMAL_PIECE_SIZE);
+        ////FindLines(adaptiveImage);
+        //std::string sClearImage = AddSuffix(sImagePath, "clear");
+        //SaveImage(adaptiveImage, sClearImage);
     }
     catch (cv::Exception &exception)
     {
