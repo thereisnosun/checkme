@@ -10,6 +10,32 @@ using namespace cv;
 
 const int THRESHOLD = 128;
 
+
+void FindLines(const Mat &adaptiveImage)
+{
+    std::vector<Vec4i> vLines;
+    HoughLinesP(adaptiveImage, vLines, CV_PI / 180, 50, 50, 10);
+    Mat cdst;
+    cvtColor(adaptiveImage, cdst, CV_GRAY2BGR);
+    for (size_t i = 0; i < vLines.size(); i++)
+    {
+        Vec4i l = vLines[i];
+        line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, CV_AA);
+    }
+    imshow("detected lines", cdst);
+    waitKey();
+}
+
+void SaveImage(const Mat &image, const std::string &sImageName)
+{
+#ifndef DEBUG
+    if (!imwrite(sImageName, image))
+    {
+        std::cout << "Failed to save image\n";
+    }
+#endif
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -25,35 +51,27 @@ int main(int argc, char *argv[])
         Mat imgGray;
         cvtColor(imgRGB, imgGray, CV_RGB2GRAY);
         std::string sBWImage = AddSuffix(sImagePath, "bw");
-        //if (!imwrite(sBWImage, imgGray))
-        //{
-        //    std::cout << "Failed to save image\n";
-        //}
+        SaveImage(imgGray, sBWImage);
 
         Mat normalizedImage;
-        imgGray.channels();
+        
         int iDepth = imgGray.depth();
-        std::cout << "Depth is - " << iDepth << "\n";
         normalize(imgGray, normalizedImage, 0, 255, NORM_MINMAX, iDepth);
-        //equalizeHist(adaptiveImage, normalizedImage);
         std::string sNormImage = AddSuffix(sImagePath, "norm");
-        //if (!imwrite(sNormImage, normalizedImage))
-        //{
-        //    std::cout << "Failed to save image\n";
-        //}
+        SaveImage(imgGray, sNormImage);
 
         Mat adaptiveImage;
         std::cout << "collumns - " << normalizedImage.cols << " rows - " << normalizedImage.rows << "\n";
-        
         adaptiveThreshold(normalizedImage, adaptiveImage, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 11, 1);
+      
+        std::string sAdaptImage = AddSuffix(sImagePath, "adaptive");
+        SaveImage(adaptiveImage, sImagePath);;
+
         NoiseReducer reducer;
         reducer.RemoveNoise(adaptiveImage, MINIMAL_PIECE_SIZE);
-        std::string sAdaptImage = AddSuffix(sImagePath, "adaptive");
-        if (!imwrite(sAdaptImage, adaptiveImage))
-        {
-            std::cout << "Failed to save image\n";
-        }
-
+        //FindLines(adaptiveImage);
+        std::string sClearImage = AddSuffix(sImagePath, "clear");
+        SaveImage(adaptiveImage, sClearImage);
     }
     catch (cv::Exception &exception)
     {
