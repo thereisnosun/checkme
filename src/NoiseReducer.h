@@ -6,11 +6,12 @@
 
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 
 using namespace cv;
 const int BLACK_PIXEL = 0;
 const int WHITE_PIXEL = 255;
-const int MINIMAL_PIECE_SIZE = 10;
+const int MINIMAL_PIECE_SIZE = 50;
 
 // if all blck pixels neighbours are included in to noise vector, then there is no path from this particular pixel
 struct PixelNeightbours
@@ -58,8 +59,9 @@ private:
                               uchar *internalPtr, int iCurIndex, int iNewIndex);
     PixelNeightbours DefinePixelNeighbours(std::vector<int> &noisePixels, std::queue<int> &checkQueue, uchar *internalPtr,
                                            int iCurrentPixel);
+    bool IsExplored(int iIndex) const;
 private:
     ImageSize m_sImageSize;
-    std::vector<int> m_exploredNodes; //which data structures fits for this purposes best ?
+    std::unordered_set<int> m_exploredNodes; //which data structures fits for this purposes best ?
 };
 

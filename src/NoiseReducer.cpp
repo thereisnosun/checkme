@@ -2,7 +2,7 @@
 
 #include <queue>
 #include <unordered_map>
-
+#include <iostream>
 
 NoiseReducer::NoiseReducer()
 {
@@ -63,9 +63,9 @@ bool NoiseReducer::CheckPixelNeightbour(std::vector<int> &noisePixels, std::queu
         return true;
 
     bool bTrueNeighbour = false;
-    if (std::end(m_exploredNodes) == std::find(m_exploredNodes.begin(), m_exploredNodes.end(), iNewIndex))
+    if (!IsExplored(iNewIndex))
     {
-        m_exploredNodes.push_back(iNewIndex);
+        m_exploredNodes.insert(iNewIndex);
         if (internalPtr[iNewIndex] == BLACK_PIXEL)
         {
             checkQueue.push(iNewIndex);
@@ -82,6 +82,13 @@ bool NoiseReducer::CheckPixelNeightbour(std::vector<int> &noisePixels, std::queu
     }
 
     return bTrueNeighbour;
+}
+
+bool NoiseReducer::IsExplored(int iIndex) const
+{
+    return m_exploredNodes.find(iIndex) == m_exploredNodes.end() ? false : true;
+    //for vector
+    //std::end(m_exploredNodes) == std::find(m_exploredNodes.begin(), m_exploredNodes.end(), iNewIndex)
 }
 
 //TODO: implement update if affected pixel is explored, then invoke specific pixel from noise
@@ -193,36 +200,44 @@ void NoiseReducer::RemoveNoise(Mat &srcImage, int iMinPixels)
         std::queue<int> checkQueue;
 
         int iIndex = 0;
-        checkQueue.push(iIndex);
-        m_exploredNodes.push_back(iIndex);
-
-        //TODO: outer while loop, till iIndex < iSize, increment iIndex after each inner loop
-        // check if incremented is in the explored nodes immediatly
-        while (!checkQueue.empty())
-        {
-            int iCurIndex = checkQueue.front();
-            checkQueue.pop();
-
-            PixelNeightbours currNeightbour = DefinePixelNeighbours(noisePixels, checkQueue, internalPtr, iCurIndex);
-            neigbourTable.insert(std::make_pair(iCurIndex, currNeightbour));
-            //TODO: update other pixel neightbours
-            if (CheckIfGraphEnded(neigbourTable))
+        while (iIndex < iSize)
+        {//TODO: why this works super slowly ? 
+            checkQueue.push(iIndex);
+            m_exploredNodes.insert(iIndex);
+            while (!checkQueue.empty())
             {
-                if (noisePixels.size() <= iMinPixels)
+                int iCurIndex = checkQueue.front();
+                checkQueue.pop();
+                PixelNeightbours currNeightbour = DefinePixelNeighbours(noisePixels, checkQueue, internalPtr, iCurIndex);
+                neigbourTable.insert(std::make_pair(iCurIndex, currNeightbour));
+                //TODO: update other pixel neightbours
+                if (CheckIfGraphEnded(neigbourTable))
                 {
-                    RemoveNoisePixels(noisePixels, internalPtr);
+                    if (noisePixels.size() <= iMinPixels)
+                    {
+                        RemoveNoisePixels(noisePixels, internalPtr);
+                        noisePixels.clear();
+                    }
+                }
+
+                if (noisePixels.size() > iMinPixels)
+                {
                     noisePixels.clear();
+                    neigbourTable.clear();
                 }
             }
 
-            if (noisePixels.size() > iMinPixels)
+            if (noisePixels.size() <= iMinPixels)
             {
-                noisePixels.clear();
-                neigbourTable.clear();
+                RemoveNoisePixels(noisePixels, internalPtr);
             }
+            while (IsExplored(iIndex))
+                ++iIndex;
+            noisePixels.clear();
+            neigbourTable.clear();
+          //  std::cout << "Curr index = " << iIndex << ". Size = " << iSize << "\n";
+     
         }
-
-
     }
     else
     {
