@@ -183,7 +183,7 @@ PixelNeightbours NoiseReducer::DefinePixelNeighbours(std::vector<int> &noisePixe
 
 void NoiseReducer::RemoveNoise(Mat &srcImage, int iMinPixels)
 {
-    MatSize size = srcImage.size;
+    auto size = srcImage.size;
     int channels = srcImage.channels();
     m_sImageSize.iRows = srcImage.rows;
     m_sImageSize.iCols = srcImage.cols;
