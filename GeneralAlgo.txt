@@ -1,0 +1,9 @@
+1. Scan the image.
+2. Convert to only black and white pixels.
+3. Locate the exact check on the photo.
+4. Reduce noise(first check if this is really necessary).
+5. Locate each character.
+6. Recognize character.
+7. Create a word.
+8. Match it to the dictionary.
+9. Create and item for each recognized
