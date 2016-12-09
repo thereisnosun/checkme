@@ -21,3 +21,13 @@ std::string AddSuffix(const std::string &sString, const std::string &sSuffix)
     return std::move(sFileName);
 }
 
+
+void SaveImage(const Mat &image, const std::string &sImageName)
+{
+#ifndef DEBUG
+    if (!imwrite(sImageName, image))
+    {
+        std::cout << "Failed to save image\n";
+    }
+#endif
+}

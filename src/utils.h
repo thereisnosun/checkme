@@ -7,3 +7,4 @@
 
 using namespace cv;
 std::string AddSuffix(const std::string &sString, const std::string &sSuffix);
+void SaveImage(const Mat &image, const std::string &sImageName);
